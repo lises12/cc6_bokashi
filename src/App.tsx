@@ -5,6 +5,7 @@ import binTcl from "./assets/bin-tcl.jpg"
 import binBlack from "./assets/bin-black.jpg"
 import bugBoomLoop from "./assets/bugboom-loop.png"
 import bugBoomLarvae from "./assets/bugboom-larvae.jpg"
+import bokashiProcess from "./assets/bokashi-process.mp4"
 
 const recyclingBins = [
   {
@@ -27,8 +28,11 @@ const recyclingBins = [
 const unsplash = (id: string) =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1200&q=80`
 
+/* `use` and `chip` show on the board; `note` and `credit` only in the pop-up */
 const outputs: {
   title: string
+  use: string
+  chip?: string
   note: string
   icon: IconName
   photo: string
@@ -37,7 +41,8 @@ const outputs: {
 }[] = [
   {
     title: "Compost",
-    note: "For hall gardens, Foodscape Collective and Project Black Gold",
+    use: "Fertiliser",
+    note: "Fertiliser for halls and external partners",
     icon: "soil",
     photo: unsplash("1708014750399-c0b86e16aea5"),
     alt: "Close-up of dark, crumbly soil",
@@ -45,7 +50,9 @@ const outputs: {
   },
   {
     title: "Liquid",
-    note: "Replaces high-chemical drain cleaners in NTU drains",
+    use: "Drain cleaner",
+    chip: "Chemical-free",
+    note: "A chemical-free drain cleaner for NTU's drains",
     icon: "drop",
     photo: unsplash("1654440122140-f1fc995ddb34"),
     alt: "Close-up of a metal sink drain",
@@ -228,6 +235,14 @@ function usePopup() {
       toggleRef.current?.focus()
     }, 220)
   }
+  useEffect(() => {
+    if (!open || closing) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closePopup()
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [open, closing])
   /* Clicks on the tile's own controls keep working; anywhere else opens the pop-up */
   const onCardClick = (e: React.MouseEvent) => {
     if (open) return
@@ -299,7 +314,7 @@ function Card<T extends string>({
   n: string
   kicker: string
   title: string
-  meta?: string
+  meta?: React.ReactNode
   views?: readonly T[]
   view?: T
   onView?: (view: T) => void
@@ -322,8 +337,8 @@ function Card<T extends string>({
           <div className="tile-title">
             <small>{kicker}</small>
             <h2 id={`${id}-title`}>{title}</h2>
+            {meta && <em>{meta}</em>}
           </div>
-          {meta && <em>{meta}</em>}
           <PopupToggle popup={popup} title={title} />
         </div>
         {views && view && onView && (
@@ -376,72 +391,116 @@ function CountUp({
   )
 }
 
+/* Overview loop: Separate keeps a hint (no detail tile); Treat and Reuse point to tiles 04 and 05.
+   The full items only show in the pop-up. */
 const steps: {
   title: string
   owner: string
   icon: IconName
+  tone: "leaf" | "amber" | "terra"
+  area: "sep" | "treat" | "reuse"
+  hint?: string
+  ref?: string
   items: string[]
 }[] = [
   {
     title: "Separate",
-    owner: "Stall owners · students",
+    owner: "Stores · students",
     icon: "leaf",
+    tone: "leaf",
+    area: "sep",
+    hint: "Sort at the source",
     items: [
-      "Stalls: uncooked scraps in their own bin",
-      "Students: follow the poster",
-      "Cleaners and CCA check the sorting",
+      "Store owners: uncooked or unsold food into an EM Bokashi bin",
+      "Students: sort out contaminants, following the poster",
+      "Club members check the sorting",
     ],
   },
   {
     title: "Treat",
-    owner: "CCA members",
+    owner: "Club members",
     icon: "bucket",
+    tone: "amber",
+    area: "treat",
+    ref: "04",
     items: [
+      "Make sure sorting is done properly",
       "Carry the waste to partners",
-      "Ferment it with Bokashi",
-      "Hall 12, Foodscape, Black Gold",
+      "Treated with Bokashi there",
     ],
   },
   {
     title: "Reuse",
     owner: "Halls · partners",
     icon: "cycle",
+    tone: "terra",
+    area: "reuse",
+    ref: "05",
     items: [
-      "Compost for hall gardens",
-      "Compost for external partners",
-      "Liquid cleans NTU drains",
+      "Compost: fertiliser for halls",
+      "Compost: fertiliser for external partners",
+      "Liquid: chemical-free drain cleaner for NTU",
     ],
   },
 ]
 
-const partners: { name: string; label: string; icon: IconName }[] = [
-  { name: "Hall 12", label: "Gardening hall", icon: "home" },
-  { name: "Foodscape Collective", label: "External partner", icon: "soil" },
-  { name: "Project Black Gold", label: "Boon Lay Nature Garden", icon: "pin" },
-]
-
-const kpis = [
+/* Partners grouped by where they are; the per-partner note only shows in the pop-up */
+const partnerGroups: {
+  where: string
+  partners: { name: string; note: string; icon: IconName }[]
+}[] = [
   {
-    value: "50",
-    unit: "%",
-    ring: 50,
-    label: "Stall owners on board",
-    note: "At least half, after one semester.",
+    where: "On campus",
+    partners: [{ name: "Hall 12", note: "Gardening hall", icon: "home" }],
   },
   {
-    value: "↓",
-    unit: "",
-    ring: 70,
-    label: "Fewer CCA checkers, same recycling rate",
-    note: "Students sort on their own.",
+    where: "Boon Lay Nature Garden",
+    partners: [
+      { name: "Foodscape Collective", note: "External partner", icon: "soil" },
+      { name: "Project Black Gold", note: "External partner", icon: "pin" },
+    ],
+  },
+]
+
+const perks: { title: string; short: string; detail: string; icon: IconName }[] = [
+  {
+    title: "Hall points",
+    short: "Dorm priority",
+    detail: "Hall points count towards student dormitory allocation.",
+    icon: "home",
+  },
+  {
+    title: "Carbon credits",
+    short: "Cheaper groceries",
+    detail: "Carbon credits help reduce students' grocery spending.",
+    icon: "leaf",
+  },
+]
+
+/* Only the 50% target is a real number, so only it gets a ring; `note` shows in the pop-up */
+const kpis: {
+  label: string
+  sub?: string
+  note: string
+  ring?: number
+  icon?: IconName
+}[] = [
+  {
+    ring: 50,
+    label: "Store owners join",
+    note: "At least 50% participation among store owners.",
+  },
+  {
+    icon: "users",
+    label: "Students sort on their own",
+    sub: "Fewer club checks",
+    note: "Students proactively sort their food waste, reducing the need for club members to ensure compliance.",
   },
 ]
 
 function App() {
   const [researchView, setResearchView] = useState<"BugBoom" | "Gaps">("BugBoom")
-  const [joinView, setJoinView] = useState<"Join" | "Thanks">("Join")
   const [seen, setSeen] = useState(0)
-  const [step, setStep] = useState(0)
   const introPopup = usePopup()
 
   return (
@@ -466,7 +525,7 @@ function App() {
           <br />
           Any <span className="fg-inline-italic">waste?</span>
         </h1>
-        <p>Leftover rice, meat, veg. Stall trimmings and unsold food at closing.</p>
+        <p>Unsold food and vegetable trimmings, thrown away at the end of each day.</p>
         <div
           className="hero-visual"
           aria-label="Scraps transform into soil and a seedling"
@@ -495,7 +554,7 @@ function App() {
         </div>
         <p className="intro-ask">
           <Icon name="leaf" size={16} />
-          What if this food waste didn't have to end up as waste at all?
+          Our project gives new value to this abundant food waste.
         </p>
         <div className="team">Kiven · Lukas · Joses · Rauf · Li Yang · Zhi Qing</div>
       </Reveal>
@@ -516,13 +575,6 @@ function App() {
             <span>Food-waste recycling rate</span>
             <small>Stagnant over the same period</small>
           </div>
-          <div className="figure slate">
-            <strong>
-              <CountUp to={2035} />
-            </strong>
-            <span>Semakau Landfill full</span>
-            <small>Minister Grace Fu</small>
-          </div>
         </div>
         <p className="footnote">An urgent need to cut food waste in Singapore.</p>
       </Card>
@@ -531,16 +583,18 @@ function App() {
         id="research"
         n="02"
         kicker="What already exists"
-        title={researchView === "BugBoom" ? "BugBoom, piloted at NTU" : "What we found on campus"}
+        title={researchView === "BugBoom" ? "BugBoom, started at NTU" : "What we found on campus"}
         views={["BugBoom", "Gaps"] as const}
         view={researchView}
         onView={setResearchView}
       >
         {researchView === "BugBoom" ? (
           <>
-            <p className="lede">
-              An alumni passion project turned business, using black soldier
-              flies to process food waste.
+            <small className="facts board-only">NTU alumni · Black soldier flies</small>
+            <p className="lede popup-only">
+              An alumni-run passion project turned business. Black soldier
+              flies process food waste: larvae become live feed, waste
+              becomes fertiliser.
             </p>
             <div className="bsf">
               <figure className="bsf-loop">
@@ -567,7 +621,19 @@ function App() {
             <p className="gap-note">
               <Icon name="bug" size={16} />
               <span>
-                <b>Gap 1</b> Students don't want to work with insects.
+                <b>Gap 1</b> Students avoid insects
+                <span className="popup-only">
+                  Students aren't fond of insects, so BugBoom won't work on campus.
+                </span>
+              </span>
+            </p>
+            <p className="gap-note">
+              <Icon name="bucket" size={16} />
+              <span>
+                <b>Gap 2</b> Food mixed with plastic
+                <span className="popup-only">
+                  Most food waste we found was contaminated with non-recyclables.
+                </span>
               </span>
             </p>
             <div className="seen-stage">
@@ -579,14 +645,7 @@ function App() {
                   className={i === seen ? "active" : ""}
                 />
               ))}
-              <span className="seen-label">
-                <b>Gap 2</b>
-                {recyclingBins[seen].label}
-              </span>
-              <div className="seen-copy">
-                <h3>Food mixed with plastic.</h3>
-                <p>Most food waste we found was contaminated with non-recyclables.</p>
-              </div>
+              <span className="seen-label popup-only">{recyclingBins[seen].label}</span>
             </div>
             <div className="seen-thumbs">
               {recyclingBins.map((bin, i) => (
@@ -607,188 +666,211 @@ function App() {
         )}
       </Card>
 
-      <Card id="solution" n="03" kicker="Our solution" title="EM Bokashi, in three steps">
-        <div className="stepper">
-          <div className="step-tabs">
-            {steps.map((item, i) => (
-              <Button
-                key={item.title}
-                className={step === i ? "active" : ""}
-                aria-pressed={step === i}
-                onClick={() => setStep(i)}
-              >
-                <span>0{i + 1}</span>
-                {item.title}
-              </Button>
-            ))}
-          </div>
-          <div className="step-detail">
-            <span className="step-art" aria-hidden="true">
-              {step + 1}
-            </span>
-            <div className="eyebrow">{steps[step].owner}</div>
-            <h3>
-              <Icon name={steps[step].icon} size={24} />
-              {steps[step].title}
-            </h3>
-            <ul>
-              {steps[step].items.map((item) => (
-                <li key={item}>
-                  <Icon name="check" size={16} />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
+      <Card id="solution" n="03" kicker="Our solution" title="Bokashi Bros, in three steps">
+        <div className="loop">
+          {steps.map((item) => (
+            <div
+              key={item.title}
+              className={`loop-step ${item.tone}`}
+              style={{ gridArea: item.area }}
+            >
+              <span className="loop-icon">
+                <Icon name={item.icon} size={22} />
+              </span>
+              <strong>{item.title}</strong>
+              <small>{item.owner}</small>
+              {item.hint && <em className="loop-hint">{item.hint}</em>}
+              {item.ref && <span className="loop-ref board-only">→ {item.ref}</span>}
+              <ul className="popup-only">
+                {item.items.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <span className="loop-arrow to-treat" aria-hidden="true">
+            <Icon name="arrow" size={22} />
+          </span>
+          <span className="loop-arrow to-reuse" aria-hidden="true">
+            <Icon name="arrow" size={22} />
+          </span>
+          <span className="loop-arrow to-sep" aria-hidden="true">
+            <Icon name="arrow" size={22} />
+          </span>
+          <span className="loop-return popup-only">Compost returns to NTU's grounds</span>
         </div>
-        <p className="footnote">
-          Student-led. At every step, people see the impact they make.
-        </p>
       </Card>
 
 
       <Card
         id="partners"
         n="04"
-        kicker="Treatment partners"
+        kicker="Step 02 · Treat"
         title="Where the waste goes"
       >
-        <ol className="waste-route">
-          <li className="route-step">
-            <span className="route-icon source">
-              <Icon name="bucket" size={18} />
+        <div className="route">
+          <div className="route-source">
+            <span className="route-icon">
+              <Icon name="bucket" size={16} />
             </span>
             <div>
-              <small>Source</small>
               <strong>NTU canteens</strong>
-              <p>Sorted by stall owners and students</p>
+              <p className="popup-only">Sorted by stall owners and students</p>
             </div>
-          </li>
-          <li className="route-carry">
+          </div>
+          <div className="route-carry">
             <Icon name="users" size={15} />
-            CCA members carry it
-            <Icon name="arrow" size={14} />
-          </li>
-          {partners.map((partner) => (
-            <li className="route-step" key={partner.name}>
-              <span className="route-icon">
-                <Icon name={partner.icon} size={18} />
-              </span>
-              <div>
-                <small>{partner.label}</small>
-                <strong>{partner.name}</strong>
-              </div>
-            </li>
-          ))}
-        </ol>
-        <p className="footnote">Treated with Bokashi at each partner.</p>
+            Club carries it
+          </div>
+          <div className="route-split">
+            {partnerGroups.map((group) => (
+              <section className="route-group" key={group.where}>
+                <small>{group.where}</small>
+                <ul>
+                  {group.partners.map((partner) => (
+                    <li key={partner.name}>
+                      <span className="route-icon">
+                        <Icon name={partner.icon} size={14} />
+                      </span>
+                      <div>
+                        <strong>{partner.name}</strong>
+                        <p className="popup-only">{partner.note}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+          <p className="footnote popup-only">Treated with Bokashi at each partner.</p>
+        </div>
       </Card>
 
-      <Card id="outputs" n="05" kicker="What Bokashi makes" title="Two products, both used">
+      <Card id="outputs" n="05" kicker="Step 03 · Reuse" title="Two products, both used">
         <div className="outputs">
           {outputs.map((out) => (
             <figure key={out.title}>
-              <div className="output-photo">
-                <img src={out.photo} alt={out.alt} />
-                <span>
-                  <Icon name={out.icon} size={15} />
-                </span>
-              </div>
+              <img src={out.photo} alt={out.alt} />
+              {out.chip && <span className="output-chip">{out.chip}</span>}
               <figcaption>
+                <span className="output-icon">
+                  <Icon name={out.icon} size={14} />
+                </span>
                 <strong>{out.title}</strong>
-                <span>{out.note}</span>
-                <small>Photo: {out.credit} · Unsplash</small>
+                <span className="output-use">{out.use}</span>
+                <p className="output-detail popup-only">
+                  {out.note}
+                  <small>Photo: {out.credit} · Unsplash</small>
+                </p>
               </figcaption>
             </figure>
           ))}
         </div>
-        <p className="footnote">Everything composted through Bokashi gets used.</p>
+        <p className="footnote popup-only">Cleaning NTU's drains in a more eco-friendly way.</p>
       </Card>
 
-      <Card id="cca" n="06" kicker="How we'll run it" title="A new CCA: Bokashi Bros">
-        <div className="stakeholder-card cca">
-          <div>
+      <Card id="trial" n="06" kicker="Our pilot" title="We tried it out">
+        <video
+          className="trial-video"
+          src={bokashiProcess}
+          autoPlay
+          muted
+          loop
+          playsInline
+          controls
+          aria-label="Our Bokashi trial: fermented compost mixed into soil"
+        />
+        <p className="footnote">Our Bokashi trial: fermented compost mixed into soil.</p>
+      </Card>
+
+      <Card id="cca" n="07" kicker="How we'll run it" title="A new club">
+        <div className="club">
+          <div className="club-value">
             <span className="eyebrow">Core value</span>
-            <strong className="cca-value">Accountability</strong>
-            <p className="cca-copy">
+            <strong>Accountability</strong>
+            <small className="club-short">Annual handover · a team effort</small>
+            <p className="club-detail">
               A proper annual handover, so closing the loop is more than one
               person's effort.
             </p>
           </div>
-          <div>
-            <span className="eyebrow">Members get</span>
-            <p>
-              <Icon name="check" size={16} />
-              <span>
-                <b>Hall points</b> for dorm allocation
-              </span>
-            </p>
-            <p>
-              <Icon name="check" size={16} />
-              <span>
-                <b>Carbon credits</b> that cut grocery bills
-              </span>
-            </p>
+          <div className="club-perks">
+            {perks.map((perk) => (
+              <div className="club-perk" key={perk.title}>
+                <span className="club-icon">
+                  <Icon name={perk.icon} size={16} />
+                </span>
+                <strong>{perk.title}</strong>
+                <small className="club-short">{perk.short}</small>
+                <p className="club-detail">{perk.detail}</p>
+              </div>
+            ))}
           </div>
         </div>
       </Card>
 
       <Card
         id="metrics"
-        n="07"
+        n="08"
         kicker="Success metrics"
         title="How we'll measure it"
-        meta="End of semester"
+        meta={
+          <>
+            End of pilot semester <span className="draft-tag">Draft targets</span>
+          </>
+        }
       >
         <div className="kpis">
           {kpis.map((kpi, i) => (
             <Reveal className="kpi" key={kpi.label}>
               <span className="kpi-n">0{i + 1}</span>
-              <div
-                className="ring"
-                style={{ "--ring": `${kpi.ring * 3.6}deg` } as React.CSSProperties}
-              >
-                <strong>
-                  {kpi.value}
-                  <small>{kpi.unit}</small>
-                </strong>
-              </div>
+              {kpi.ring !== undefined ? (
+                <div
+                  className="ring"
+                  style={{ "--ring": `${kpi.ring * 3.6}deg` } as React.CSSProperties}
+                >
+                  <strong>
+                    {kpi.ring}
+                    <small>%+</small>
+                  </strong>
+                </div>
+              ) : (
+                kpi.icon && (
+                  <div className="kpi-icon">
+                    <Icon name={kpi.icon} size={28} />
+                  </div>
+                )
+              )}
               <div className="kpi-text">
                 <span className="kpi-label">{kpi.label}</span>
-                <p>{kpi.note}</p>
+                {kpi.sub && <small className="board-only">{kpi.sub}</small>}
+                <p className="popup-only">{kpi.note}</p>
               </div>
             </Reveal>
           ))}
         </div>
+        <p className="footnote popup-only">
+          Targets to be refined with two more weeks of research, including how
+          to measure student proactiveness.
+        </p>
       </Card>
 
-      <Card
-        id="join"
-        n="08"
-        kicker="Join us"
-        title="Join Bokashi Bros"
-        views={["Join", "Thanks"] as const}
-        view={joinView}
-        onView={setJoinView}
-      >
-        {joinView === "Join" ? (
-          <div className="thanks join">
-            <Icon name="users" size={26} />
-            <h3>Make NTU more sustainable, one bokashi at a time.</h3>
-            <p>Join Bokashi Bros and make a difference today.</p>
-          </div>
-        ) : (
-          <div className="thanks">
-            <Icon name="leaf" size={26} />
+      <Card id="thanks" n="09" kicker="Closing" title="Questions?">
+        <div className="thanks">
+          <div className="thanks-main">
+            <Icon name="leaf" size={30} />
             <h3>Thank you.</h3>
-            <p>CC0006 Group A · Kiven, Lukas, Joses, Rauf, Li Yang, Zhi Qing</p>
-            <ul aria-label="Sources">
-              <li>NEA (2025): food waste up ~4.6% in two years; 18% recycled.</li>
-              <li>Minister Grace Fu: Semakau Landfill full around 2035.</li>
-              <li>BugBoom: NTU alumni black soldier fly project.</li>
-            </ul>
+            <small>
+              Group C27
+              <span className="popup-only">Kiven, Lukas, Joses, Rauf, Li Yang, Zhi Qing</span>
+            </small>
           </div>
-        )}
+          <small className="thanks-sources board-only">Sources: NEA 2025 · BugBoom</small>
+          <ul className="popup-only" aria-label="Sources">
+            <li>NEA (2025): food waste up ~4.6% in two years; 18% recycled.</li>
+            <li>BugBoom: NTU alumni black soldier fly project.</li>
+          </ul>
+        </div>
       </Card>
     </main>
   )

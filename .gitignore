@@ -10,6 +10,9 @@ dist/
 .env.*.local
 .env.local
 
+# original video; the site uses the smaller src/assets/bokashi-process.mp4
+src/assets/*.MOV
+
 # logs
 *.log
 
