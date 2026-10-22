@@ -6,6 +6,7 @@ import binBlack from "./assets/bin-black.jpg"
 import bugBoomLoop from "./assets/bugboom-loop.png"
 import bugBoomLarvae from "./assets/bugboom-larvae.jpg"
 import bokashiProcess from "./assets/bokashi-process.mp4"
+import drainWater from "./assets/drain_water.jpg"
 
 const recyclingBins = [
   {
@@ -37,7 +38,7 @@ const outputs: {
   icon: IconName
   photo: string
   alt: string
-  credit: string
+  credit?: string
 }[] = [
   {
     title: "Compost",
@@ -54,9 +55,8 @@ const outputs: {
     chip: "Chemical-free",
     note: "A chemical-free drain cleaner for NTU's drains",
     icon: "drop",
-    photo: unsplash("1654440122140-f1fc995ddb34"),
-    alt: "Close-up of a metal sink drain",
-    credit: "Daniel Dan",
+    photo: drainWater,
+    alt: "Container of Bokashi liquid used as drain cleaner",
   },
 ]
 
@@ -470,7 +470,7 @@ const perks: { title: string; short: string; detail: string; icon: IconName }[] 
     icon: "home",
   },
   {
-    title: "Carbon credits",
+    title: "(Exploration) Carbon credits",
     short: "Cheaper groceries",
     detail: "Carbon credits help reduce students' grocery spending.",
     icon: "leaf",
@@ -760,7 +760,7 @@ function App() {
                 <span className="output-use">{out.use}</span>
                 <p className="output-detail popup-only">
                   {out.note}
-                  <small>Photo: {out.credit} · Unsplash</small>
+                  {out.credit && <small>Photo: {out.credit} · Unsplash</small>}
                 </p>
               </figcaption>
             </figure>
